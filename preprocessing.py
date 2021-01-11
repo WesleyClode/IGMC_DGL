@@ -740,6 +740,8 @@ def load_data_monti(dataset, testing=False, rating_map=None, post_rating_map=Non
         Wcol = load_matlab_file(path_dataset, 'W_movies')
         u_features = Wrow
         v_features = Wcol
+    elif dataset == 'Tmall':
+        print("loaded Tmall")
     elif dataset == 'douban':
         Wrow = load_matlab_file(path_dataset, 'W_users')
         u_features = Wrow
@@ -900,6 +902,237 @@ def load_data_monti(dataset, testing=False, rating_map=None, post_rating_map=Non
         print(v_features)
         v_features = sp.csr_matrix(v_features)
         print("Item features shape: " + str(v_features.shape))
+    print("train_labels:")
+    print(train_labels)
+    print("u_train_idx")
+    print(u_train_idx)
+    print("v_train_idx")
+    print(v_train_idx)
+    print("test_labels")
+    print(test_labels)
+    print("u_test_idx")
+    print(u_test_idx)
+    print("v_test_idx")
+    print(v_test_idx)
+    print("class_values")
+    print(class_values)
+    print(num_users)
+    return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
+        val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values, num_users
+
+
+def load_data_monti_Tmall(dataset, testing=False, rating_map=None, post_rating_map=None, own = False):
+    """
+    Loads data from Monti et al. paper.
+    if rating_map is given, apply this map to the original rating matrix
+    if post_rating_map is given, apply this map to the processed rating_mx_train without affecting the labels
+    """
+
+    if not own:
+        path_dataset = 'raw_data/' + dataset + '/training_test_dataset.mat'
+        import scipy
+        features_struct = scipy.io.loadmat(path_dataset)
+        M = features_struct['M']
+        if rating_map is not None:
+            M[np.where(M)] = [rating_map[x] for x in M[np.where(M)]]
+        print(M.shape)
+        #Otraining = load_matlab_file(path_dataset, 'Otraining')
+        #Otest = load_matlab_file(path_dataset, 'Otest')
+        num_users = M.shape[0]
+        num_items = M.shape[1]
+    else:
+        path_dataset = 'raw_data/' + dataset + '/douban_train'
+    print(path_dataset)
+    
+    u_features = None
+    v_features = None
+    
+    # if dataset == 'flixster':
+    #     Wrow = load_matlab_file(path_dataset, 'W_users')
+    #     Wcol = load_matlab_file(path_dataset, 'W_movies')
+    #     u_features = Wrow
+    #     v_features = Wcol
+    # elif dataset == 'Tmall':
+    #     print("loaded Tmall")
+    # elif dataset == 'douban':
+    #     Wrow = load_matlab_file(path_dataset, 'W_users')
+    #     u_features = Wrow
+    #     v_features = np.eye(num_items)
+    # elif dataset == 'yahoo_music':
+    #     Wcol = load_matlab_file(path_dataset, 'W_tracks')
+    #     u_features = np.eye(num_users)
+    #     v_features = Wcol
+    # elif dataset == 'own' or dataset == 'all':
+    #     u_features = None
+    #     v_features = None
+    #     rating_train, Train_index, Train_indptr, Train_data, Val_index, Val_indptr, Val_data, Test_index,Test_indptr, Test_data, user_dic, item_dic = load_own_file2(path_dataset)
+    #     Train_indptr = list(np.array(Train_indptr) + len(user_dic))
+    #     Val_indptr = list(np.array(Val_indptr) + len(user_dic))
+    #     Test_indptr = list(np.array(Test_indptr) + len(user_dic))
+    #     class_values = np.array([1, 2, 3, 4, 5])
+    #     print('number of users = ', len(user_dic))
+    #     print('number of item = ', len(item_dic))
+    #     print("train_labels:")
+    #     print(Train_data)
+    #     print("u_train_idx")
+    #     print(Train_index)
+    #     print("v_train_idx")
+    #     print(Train_indptr)
+    #     print("test_labels")
+    #     print(Test_data)
+    #     print("u_test_idx")
+    #     print(Test_index)
+    #     print("v_test_idx")
+    #     print(Test_indptr)
+    #     print("class_values")
+    #     print(class_values)
+    #     return u_features, v_features, rating_train, Train_data, Train_index, Train_indptr, \
+    #         Val_data, Val_index, Val_indptr, Test_data, Test_index, Test_indptr, class_values
+    # elif dataset == 'group':
+    #     rating_train, Train_index, Train_indptr, Train_data, Val_index, Val_indptr, Val_data, Test_index,Test_indptr, Test_data, user_dic, item_dic = load_group_file_rank(path_dataset)
+    #     u_features = range(len(user_dic))
+    #     v_features = range(len(user_dic), len(item_dic)+len(user_dic))
+    #     Train_indptr = list(np.array(Train_indptr) + len(user_dic))
+    #     Val_indptr = list(np.array(Val_indptr) + len(user_dic))
+    #     Test_indptr = list(np.array(Test_indptr) + len(user_dic))
+    #     class_values = np.array([0, 1])
+    #     print('number of users = ', len(user_dic))
+    #     print('number of item = ', len(item_dic))
+    #     return u_features, v_features, rating_train, Train_data, Train_index, Train_indptr, \
+    #         Val_data, Val_index, Val_indptr, Test_data, Test_index, Test_indptr, class_values
+
+    u_nodes_ratings = np.where(M)[0]
+    v_nodes_ratings = np.where(M)[1]
+    print("u_nodes:")
+    print(u_nodes_ratings)
+    print("v_nodes:")
+    print(v_nodes_ratings)
+    ratings = M[np.where(M)]
+    ''' 
+    #Test SVD
+    U, s, Vh = linalg.svds(Otraining)
+    s_diag_matrix = np.diag(s)
+    svd_prediction = np.dot(np.dot(U,s_diag_matrix),Vh)
+    prediction_flatten = np.reshape(svd_prediction[Otest.nonzero()], (1,-1))
+    test_data_matrix_flatten = Otest[Otest.nonzero()]
+    rmse = sqrt(mean_squared_error(prediction_flatten,test_data_matrix_flatten))
+    print("SVD rmse:", rmse)
+    '''
+
+    u_nodes_ratings, v_nodes_ratings = u_nodes_ratings.astype(np.int64), v_nodes_ratings.astype(np.int32)
+    ratings = ratings.astype(np.float64)
+
+    u_nodes = u_nodes_ratings
+    v_nodes = v_nodes_ratings
+
+    print('number of users = ', len(set(u_nodes)))
+    print('number of item = ', len(set(v_nodes)))
+
+    neutral_rating = -1  # int(np.ceil(np.float(num_classes)/2.)) - 1
+
+    # assumes that ratings_train contains at least one example of every rating type
+    rating_dict = {r: i for i, r in enumerate(np.sort(np.unique(ratings)).tolist())}
+
+    labels = np.full((num_users, num_items), neutral_rating, dtype=np.int32)
+    labels[u_nodes, v_nodes] = np.array([rating_dict[r] for r in ratings])
+
+    for i in range(len(u_nodes)):
+        assert(labels[u_nodes[i], v_nodes[i]] == rating_dict[ratings[i]])
+
+    labels = labels.reshape([-1])
+
+    # number of test and validation edges
+
+    # num_train = np.where(Otraining)[0].shape[0]
+    # num_test = np.where(Otest)[0].shape[0]
+    # num_val = int(np.ceil(num_train * 0.2))
+    # num_train = num_train - num_val
+
+    # pairs_nonzero_train = np.array([[u, v] for u, v in zip(np.where(Otraining)[0], np.where(Otraining)[1])])
+    # idx_nonzero_train = np.array([u * num_items + v for u, v in pairs_nonzero_train])
+
+    # pairs_nonzero_test = np.array([[u, v] for u, v in zip(np.where(Otest)[0], np.where(Otest)[1])])
+    # idx_nonzero_test = np.array([u * num_items + v for u, v in pairs_nonzero_test])
+
+    # # Internally shuffle training set (before splitting off validation set)
+    # rand_idx = list(range(len(idx_nonzero_train)))
+    # np.random.seed(42)
+    # np.random.shuffle(rand_idx)
+    # idx_nonzero_train = idx_nonzero_train[rand_idx]
+    # pairs_nonzero_train = pairs_nonzero_train[rand_idx]
+
+    # idx_nonzero = np.concatenate([idx_nonzero_train, idx_nonzero_test], axis=0)
+    # pairs_nonzero = np.concatenate([pairs_nonzero_train, pairs_nonzero_test], axis=0)
+    num_train = np.where(M)[0].shape[0]
+    num_test = int(np.ceil(num_train * 0.2))
+    num_val = int(np.ceil(num_train * 0.2))
+    num_train = num_train - num_val - num_test    
+    
+    
+    pairs_nonzero = np.array([[u, v] for u, v in zip(np.where(M)[0], np.where(M)[1])])
+    idx_nonzero = np.array([u * num_items + v for u, v in pairs_nonzero])
+    
+    # Internally shuffle training set (before splitting off validation set)
+    rand_idx = list(range(len(idx_nonzero)))
+    np.random.seed(42)
+    np.random.shuffle(rand_idx)
+    idx_nonzero = idx_nonzero[rand_idx]
+    pairs_nonzero = pairs_nonzero[rand_idx]    
+
+
+
+    
+
+    val_idx = idx_nonzero[0:num_val]
+    train_idx = idx_nonzero[num_val:num_train + num_val]
+    test_idx = idx_nonzero[num_train + num_val:]
+
+    assert(len(test_idx) == num_test)
+
+    val_pairs_idx = pairs_nonzero[0:num_val]
+    train_pairs_idx = pairs_nonzero[num_val:num_train + num_val]
+    test_pairs_idx = pairs_nonzero[num_train + num_val:]
+
+    u_test_idx, v_test_idx = test_pairs_idx.transpose()
+    u_val_idx, v_val_idx = val_pairs_idx.transpose()
+    u_train_idx, v_train_idx = train_pairs_idx.transpose()
+
+    # create labels
+    train_labels = labels[train_idx]
+    val_labels = labels[val_idx]
+    test_labels = labels[test_idx]
+
+    if testing:
+        u_train_idx = np.hstack([u_train_idx, u_val_idx])
+        v_train_idx = np.hstack([v_train_idx, v_val_idx])
+        train_labels = np.hstack([train_labels, val_labels])
+        # for adjacency matrix construction
+        train_idx = np.hstack([train_idx, val_idx])
+
+    class_values = np.sort(np.unique(ratings))
+
+    # make training adjacency matrix
+    rating_mx_train = np.zeros(num_users * num_items, dtype=np.float32)
+    '''Note here rating matrix elements' values + 1 !!!'''
+    if post_rating_map is None:
+        rating_mx_train[train_idx] = labels[train_idx].astype(np.float32) + 1.
+    else:
+        rating_mx_train[train_idx] = np.array([post_rating_map[r] for r in class_values[labels[train_idx]]]) + 1.
+
+    rating_mx_train = sp.csr_matrix(rating_mx_train.reshape(num_users, num_items))
+
+
+    # if u_features is not None:
+    #     print("user Features:")
+    #     print(u_features)
+    #     u_features = sp.csr_matrix(u_features)
+    #     print("User features shape: " + str(u_features.shape))
+
+    # if v_features is not None:
+    #     print("Item Features")
+    #     print(v_features)
+    #     v_features = sp.csr_matrix(v_features)
+    #     print("Item features shape: " + str(v_features.shape))
     print("train_labels:")
     print(train_labels)
     print("u_train_idx")
